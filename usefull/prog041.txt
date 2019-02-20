@@ -1,0 +1,305 @@
+extern void object::ServiceTower2()
+{
+	//resetExChgPst();
+	
+	while(true)
+	{
+		if(load == null)
+		    getCell();
+		else
+		{
+			if(load.energyLevel < 1)
+			    maint();  
+			
+			loadTower();
+		}
+	}
+}
+void object::resetExChgPst()
+{
+	object towers[];
+	
+	towers = findAndSortTowers();
+	
+	for(int i = 0; i < sizeof(towers)-1; i++)
+	    finishService(towers[i]);
+}
+
+object object::getTower()
+{
+	object towers[];
+	
+	towers = findAndSortTowers();
+	
+	for(int i = 0; i < sizeof(towers)-1; i++)
+	{
+		if(towers[i] != null and not currentlyBeingServiced(towers[i]))
+		    return towers[i];
+	}
+	
+	return null;
+}
+
+void object::getCell()
+{
+	object bestCell = findBestCell();
+	
+	if(bestCell == null)
+	    getCellFromTower();
+	else
+	{
+		myGoto(bestCell.position);
+		
+		errmode(0);
+		grab();
+		errmode(1);
+	}
+}
+
+object object::findBestCell()
+{
+	object cell = radar(PowerCell);
+	object bestCell = cell;
+	
+	float min = 0;
+	
+	while( (cell = radar(PowerCell,0,360,min)) != null )
+	{ 
+		if(cell.energyLevel == 1)
+		    return cell;
+		
+		if(bestCell.energyLevel < cell.energyLevel)
+		    bestCell = cell;
+		
+		min = distance2d(position,cell.position) + 0.5;
+	}
+	
+	return bestCell;
+} 
+
+object[] object::findAndSortTowers()
+{
+	object towers[];
+	
+	int i = 0; 
+	float min = 0;
+	
+	while((towers[i] = radar(DefenseTower,0,360,min)) != null)
+	    min = distance2d(position,towers[i++].position) + 0.5;
+	
+	for(int j = i-1; j > 0; j--)
+	{
+		for(int k = 0; k < j; k++)
+		{
+			float energyLevel1 = -1;
+			float energyLevel2 = -1;
+			
+			if(towers[k].energyCell != null)
+			    energyLevel1 = towers[k].energyCell.energyLevel;
+			
+			if(towers[k+1].energyCell != null)
+			    energyLevel2 = towers[k+1].energyCell.energyLevel;
+			
+			if(energyLevel1 > energyLevel2)
+			{
+				object temp  = towers[k];
+				towers[k]    = towers[k+1];
+				towers[k+1]  = temp;
+			}
+		}
+	}
+	
+	return towers;
+} 
+
+void object::getCellFromTower()
+{
+	object tower = getTower();
+	
+	if(tower == null)
+	    return;
+	
+	if(tower.energyCell != null)
+	{
+		int cat[];
+		cat[0] = PowerStation;
+		cat[1] = PowerCaptor;
+		
+		if(tower.energyCell.energyLevel < 0.5 and radar(cat) != null)
+		{
+			startService(tower);
+			myGoto(tower.position);
+			
+			while(enemyIsNear() and tower.energyCell.energyLevel >= 0.125)
+			    wait(1);   
+			
+			grab();
+			finishService(tower);
+		}  
+	}
+}
+
+void object::loadTower()
+{
+	object tower = getTower();
+	
+	if(tower == null)
+	    return;
+	
+	if(tower.energyCell != null)
+	{
+		if(tower.energyCell.energyLevel < load.energyLevel)
+		{
+			startService(tower);
+			myGoto(tower.position);
+			
+			while(enemyIsNear() and tower.energyCell.energyLevel >= 0.125)
+			    wait(1);   
+			
+			swapCell();
+			finishService(tower);
+		}
+	}
+	else
+	{
+		startService(tower);
+		
+		myGoto(tower.position);
+		drop();
+		
+		finishService(tower);
+	}
+}
+
+void object::startService(object o)
+{
+	if(radar(ExchangePost) == null)
+	    return;
+	
+	send(o.position.x + "/" + o.position.y,1,1000); 
+}
+
+
+bool object::currentlyBeingServiced(object o)
+{
+	return testinfo(o.position.x + "/" + o.position.y,1000); 
+}
+
+void object::finishService(object o)
+{
+	deleteinfo(o.position.x + "/" + o.position.y,1000); 
+}
+
+void object::swapCell()
+{
+	drop(Behind);
+	
+	grab(); 
+	
+	turn(90);
+	drop();
+	
+	turn(-90);
+	grab(Behind);
+	
+	drop();
+	
+	turn(90);
+	grab();
+}
+
+void object::maint()
+{
+	message("PowerCell needs recharge.  Searching for energy sources...");
+	
+	if(rechargePlanA() == false and rechargePlanB() == false)
+	{
+		message("Warning.  No energy sources found!");
+		wait(5);
+		return;
+	}
+	
+	message("Recharge completed.  Resuming job duties...", DisplayInfo);
+}
+
+bool object::rechargePlanA()
+{
+	int cat[];
+	cat[0] = PowerStation; 
+	cat[1] = PowerCaptor;
+	
+	object pwrSource = radar(cat);  
+	
+	if(pwrSource == null)
+	    return false;
+	
+	myGoto(triangulate2d(pwrSource));
+	myGoto(pwrSource.position);
+	
+	message("Recharging at " + pwrSource.category + "...",DisplayInfo);
+	
+	while(load.energyLevel < 1)
+	    wait(1);
+	
+	goto(space());
+	
+	return true;
+}
+
+bool object::rechargePlanB()
+{
+	object bestCell = findBestCell(); 
+	
+	if(bestCell == null)
+	    return false;
+	
+	if(load.energyLevel < bestCell.energyLevel)
+	{
+		goto(bestCell.position);    
+		
+		message("Swapping with better PowerCell...",DisplayInfo);
+		
+		drop(Behind);
+		grab();
+		
+		return true;
+	}
+	
+	return false;
+}
+
+bool object::enemyIsNear()
+{
+	int cat[];                
+	 
+	cat[0] = AlienAnt;    
+	cat[1] = AlienWorm;  
+	cat[2] = AlienWasp; 
+	cat[3] = AlienSpider;
+	
+	object enemy = radar(cat,0,360,0,75);
+	
+	if(enemy == null)
+	    return false;
+	
+	return true;
+}
+void object::myGoto(point p)
+{
+	errmode(0);
+	
+	while(goto(p) != 0)
+	    wait(2);    
+	
+	errmode(1);
+}
+
+point object::triangulate2d(object o)
+{
+	point dest = o.position;
+	
+	dest.x += cos(o.orientation) * 10;
+	dest.y += sin(o.orientation) * 10;
+	
+	return dest;
+}

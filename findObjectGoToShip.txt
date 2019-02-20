@@ -1,0 +1,10 @@
+extern void object::findObjectGetToShip()
+{
+	object item = radar(KeyB);
+	goto(item.position);
+	grab();
+	message("Am gasit obiectul, ma indrept catre nava");
+	goto(radar(SpaceShip).position);
+	drop();
+	message("Am ajuns la nava.");
+}

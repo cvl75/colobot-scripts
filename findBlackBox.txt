@@ -1,0 +1,9 @@
+extern void object::findBlackBox()
+{
+	object item = radar(BlackBox);
+	goto(item.position);
+	grab();
+	message("Am gasit CutiaNeagra");
+	goto(radar(SpaceShip).position);
+	drop();
+}

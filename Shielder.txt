@@ -1,0 +1,28 @@
+extern void object::Shielder()
+{
+	int allyType = PhazerShooter;  //pe cine sa urmareasca , Me PhazerShooter
+	int keepCloseDist = 5; //cat de in spate sa stea
+	
+	while(true)
+	{
+		follow(allyType, keepCloseDist);
+	}
+}
+
+void object::follow(int category, int perimeter)
+{
+	object ally = radar(category);
+	float dis = distance(position, ally.position);
+	
+	shield(1,dis+2);
+	
+	if (dis>perimeter)
+	{
+		float dir = direction(ally.position);
+		motor(1-dir/22.5, 1+dir/22.5);
+	}
+	else 
+	{
+		motor(0,0);
+	}
+}

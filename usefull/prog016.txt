@@ -1,0 +1,69 @@
+extern void object::Mission1()
+{
+	object rdr;
+	
+	if(category ==WheeledGrabber)
+	{
+		rdr = radar(PowerCell);
+		goto(rdr.position);
+		grab();
+		
+		rdr = radar(ResearchCenter);
+		goto(rdr.position);
+		drop();
+		
+		message("Research center powered - begin research.");
+		
+		rdr = radar(PowerCell); // There are two powercells that get in the way
+		goto(rdr.position);
+		grab();
+		turn(90);
+		drop();
+		move(-5);
+		rdr = radar(PowerCell);
+		goto(rdr.position);
+		grab();
+		turn(90);
+		drop();
+		
+		rdr = radar(Titanium);
+		goto(rdr.position);
+		grab();
+		
+		rdr = radar(BotFactory);
+		goto(rdr.position);
+		drop();
+		move(-5);
+		
+		message("Bot factory loaded. Create new bot.");
+		
+		rdr = radar(PowerCell);
+		goto(rdr.position);
+		grab();
+		
+		rdr = radar(TrackedGrabber);
+		message("Waiting for manufacture of Tracked Grabber.");
+		while(rdr == null) rdr = radar(TrackedGrabber);
+		
+		goto(rdr.position);
+		drop();
+		
+		message("Tracked grabber is ready.");
+		
+		rdr = radar(SpaceShip);
+		goto(rdr.position);
+	}
+	else
+	{
+		move(-5);
+		
+		rdr = radar(BlackBox);
+		goto(rdr.position);
+		grab();
+		
+		rdr = radar(SpaceShip);
+		goto(rdr.position);
+		drop();
+	}
+	message(category + ": Mission complete");
+}

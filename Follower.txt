@@ -1,0 +1,31 @@
+extern void object::Follower()
+{
+	int allyType = Me;  //pe cine sa urmareasca
+	int keepCloseDist = 5; //cat de in spate sa stea
+	
+	while(true)
+	{
+		follow(allyType, keepCloseDist);
+	}
+}
+
+void object::follow(int category, int perimeter)
+{
+	object ally = radar(category);
+	float dis = distance(position, ally.position);
+	
+	if (dis>perimeter)
+	{
+		float dif = ally.position.z -position.z;
+		float ang = asin(dif/dis);
+		
+		jet(1-(ang/-20));
+		
+		float dir = direction(ally.position);
+		motor(1-dir/22.5, 1+dir/22.5);
+	}
+	else 
+	{
+		motor(0,0);
+	}
+}

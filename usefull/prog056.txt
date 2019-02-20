@@ -1,0 +1,49 @@
+extern void object::main()
+{
+	object item;
+	item =NewRadar(Me,0,180,0,1000,1);
+	//while(true);
+      //example how to use it
+	item =NewRadar(Titanium,90,360,10,250,-1);
+      //as normal radar
+}
+
+public object object::NewRadar(int category, float angle, float focus, float min, float max,float way)
+{
+	object currect=retobject(0);
+	object itemx=null;
+	int i=0;
+	int needdistance;
+	if (way == -1)
+	{
+		needdistance = min - 0.01;
+	}
+	else needdistance = max + 0.01;
+	
+	do
+	{
+		i++;
+		
+		float dis = direction(currect.position) - angle;
+		if (dis < 0)
+		{
+			dis = -dis; 
+		}
+		
+		
+		
+		if((distance(this.position,currect.position) >= min) && (distance(this.position,currect.position) <= max) && (currect.category == category) && ( (distance(this.position,currect.position) * way) < (needdistance * way))  && (dis <= focus /2) )
+		{
+			
+			itemx=currect;
+			needdistance = distance(this.position,currect.position);
+			
+		}
+		
+		currect=retobject(i);
+		
+	}
+	while(currect != null);
+	
+	return itemx;
+}

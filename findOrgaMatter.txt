@@ -1,0 +1,10 @@
+extern void object::findOrgaMatter()
+{
+	object item = radar(OrgaMatter);
+	goto(item.position);
+	grab();
+	message("Am gasit BioMasa");
+	goto(radar(SpaceShip).position);
+	message("Am adus-o la nava");
+	drop();
+}
