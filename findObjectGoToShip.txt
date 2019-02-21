@@ -1,6 +1,6 @@
 extern void object::findObjectGetToShip()
 {
-	object item = radar(KeyB);
+	object item = radar(KeyB); // de obicei KeyA .. KeyD
 	goto(item.position);
 	grab();
 	message("Am gasit obiectul, ma indrept catre nava");
