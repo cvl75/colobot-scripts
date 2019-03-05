@@ -1,0 +1,27 @@
+extern void object::SwitchCell()
+{
+	if (load==null){ //daca nu  avem baterie, schimbam cu cea din fata
+		grab(InFront);     // take the new cell in front
+		drop(Behind);      // and drop it behind
+		
+		grab(EnergyCell);  // take the cell from the bot
+		drop(InFront);     // and drop it in front
+		
+		grab(Behind);      // take the new cell
+		drop(EnergyCell);  // and drop it on the bot
+	}
+	else {
+		drop(Behind);      // drop it behind
+		
+		grab(InFront);     // take the old cell in front
+		turn(90);
+		drop();
+		
+		turn (-90);
+		grab(Behind);      // take the new cell
+		drop(InFront);     // and drop it in front
+		
+		turn(90);
+		grab();
+	}
+}

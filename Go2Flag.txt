@@ -1,0 +1,6 @@
+extern void object::Go2Flag()
+{
+	object flag = radar(BlueFlag);
+	
+	goto(flag.position);
+}

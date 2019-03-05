@@ -1,0 +1,13 @@
+extern void object::rechargeReturn()
+{
+	point start = position;
+	
+	goto(radar(PowerStation).position);
+	message("Incarca bateriile...");
+	while (energyCell.energyLevel < 1 or load.energyLevel < 1) {
+        wait(0.5);
+    }
+
+	goto(start);
+	message("Botul s-a intors");
+}

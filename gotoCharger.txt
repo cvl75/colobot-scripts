@@ -1,0 +1,11 @@
+extern void object::gotoCharger()
+{
+	object charger;
+	
+	charger = radar(PowerStation);
+	goto(charger.position);
+	
+	message("Pasarea a ajuns la incarcator");
+	
+	
+}

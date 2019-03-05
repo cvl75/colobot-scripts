@@ -1,0 +1,15 @@
+extern void object::transformWreck()
+{
+	object wreck;
+	
+	while( (wreck = radar(Wreck)) == null )
+	{
+		message("No TitaniumOre found.  Standing by...");
+		wait(10);    
+	}
+	
+	goto(wreck.position);
+	
+	recycle();
+	
+}

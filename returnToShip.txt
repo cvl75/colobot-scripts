@@ -1,0 +1,12 @@
+extern void object::returnToShip()
+{
+	object ship;
+	point alt;
+	
+	alt = position;
+	
+	ship = radar(SpaceShip);
+	
+	goto(ship.position);
+	message("Mesaj");
+}
