@@ -8,7 +8,7 @@ Add all scripts in usefull folder to colobot script public folder ( ~/.local/sha
 
 ## OR
 
-1. Add all_in_1.txt in savegame program folder. This script contains all functions needed with "public" declaration.
+1. Add all_in_1.txt in savegame or public program folder. This script contains all functions needed with "public" declaration.
 2. Load this script in the first/{most protected} grabber
 3. update grabber function main
 4. All other grabbers/bots need only one new main function 
