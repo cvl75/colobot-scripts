@@ -1,7 +1,8 @@
-//generice: goHome
-//worker: collectTitanium/UraniumOre, findObjectGotoShip, rechargeAllTowers
-//atac:  attackAll, roboAim, shielder(PhazerShooter,5), follower(Me,5)
-//objects: OrgaMatter, KeyA/B/C/D, BlackBox
+//generic: goHome, flyingDrill
+//workers: collect[Titanium/Uranium]Ore, findObjectGotoShip, rechargeAllTowers, dropHomeAndReturn
+//atack bots:  attackAll, roboAim
+//helpers: shielder(PhazerShooter,5), follower(Me,5)
+//ex objects: OrgaMatter, Key[A/B/C/D], BlackBox, TNT
 
 extern void object::main(){
 	collectTitaniumOre();
@@ -426,3 +427,31 @@ public void object::follower(int category, int perimeter)
 	}
 }
 
+public void object::flyingDrill()
+{
+	object rdr;
+	object last;
+	
+	while(true)
+	{
+		rdr = radar(Target2,0,180,1,100);
+		if(rdr == null)
+		{
+			goHome();
+			break;
+		}
+		if(rdr.position.z > position.z) jet(0.3);
+		if(rdr.position.z < position.z) jet(-0.3);
+		if(direction(rdr.position) > 2) motor(0.5,1);
+		if(direction(rdr.position) < 2) motor(1,0.5);
+		if(abs(direction(rdr.position)) <= 2) motor(1,1);
+		if(temperature > 0.9) //Should not need this part
+		{
+			motor(0,0);
+			while(temperature > 0) {
+				jet(-0.3);
+				wait(1);
+			}
+		}
+	}
+}
