@@ -1,0 +1,428 @@
+//generice: goHome
+//worker: collectTitanium/UraniumOre, findObjectGotoShip, rechargeAllTowers
+//atac:  attackAll, roboAim, shielder(PhazerShooter,5), follower(Me,5)
+//objects: OrgaMatter, KeyA/B/C/D, BlackBox
+
+extern void object::main(){
+	collectTitaniumOre();
+}
+
+public void object::roboAim()
+{
+	object alien;
+	float angle;
+	int alienList[], nr;
+	
+	nr = 0;
+	
+	alienList[nr++] = AlienWasp;
+	alienList[nr++] = AlienAnt;
+	alienList[nr++] = AlienSpider;
+	alienList[nr++] = AlienWorm;
+	alienList[nr++] = AlienEgg;
+	alienList[nr++] = TargetBot;
+	
+	alien = radar(alienList,0,90,0,45);
+	if(alien != null)        //if there still is a alien left
+	{
+		if(distance(position, alien.position) < 45)
+		{
+			turn(direction(alien.position));    //coarse turn adjustment;
+			
+			angle = atan(((topo(alien.position)+alien.altitude)-(topo(position)+altitude))/distance2d(position, alien.position));        //determine absolute aiming angle
+			
+			// calulate and turn to adjust for roll angle
+			if(roll < 0) turn((angle-pitch)*cos(roll)*cos(90-roll));
+			else turn(-((angle-pitch)*cos(roll)*cos(90-roll)));
+			
+			aim(angle-pitch);    //aim at the target
+			
+			fire(0.1);    //kill it
+		}
+	}
+	else message("No target");
+	
+	if(temperature > 0.8) message("Engines at " + (temperature * 100) + "%");
+	if(shieldLevel < 0.2) message("Warning-Shield at " + (shieldLevel * 100) + "%");
+	if(energyCell.energyLevel < 0.2) message("Warning-Energy at " + (energyCell.energyLevel * 100) + "%");
+}
+
+public void object::findObjectGotoShip(int obj)
+{
+	object item = radar(obj); // de obicei KeyA .. KeyD
+	myGoto(item.position);
+	grab();
+	message("Am gasit obiectul, ma indrept catre nava");
+	//myGoto(radar(SpaceShip).position);
+	goHome();
+	drop();
+	message("Am ajuns la nava.");
+}
+
+
+public void object::goHome()
+{
+	myGoto(radar(SpaceShip).position);
+}
+
+public void object::dropHomeAndReturn()
+{
+	point startPos = position;
+	goto(space(radar(SpaceShip).position, 1, 10, 1));
+	drop();
+	wait(5);
+	goto(startPos);
+}
+
+
+public void object::collectUraniumOre()
+{
+	while(true)
+	{
+		if(energyCell.energyLevel <= 0.4)
+		    maint();
+		
+		if(load == null)
+		    retrieveResource(UraniumOre);
+		else
+		{
+			processResource(NuclearPlant);
+			deliverResource(BotFactory);
+		}
+	}
+}
+public void object::collectTitaniumOre()
+{
+	while(true)
+	{
+		if(energyCell.energyLevel <= 0.4)
+		    maint();
+		
+		if(load == null)
+		    retrieveResource(TitaniumOre);
+		else
+		{
+			processResource(Converter);
+			deliverResource(-1);
+		}
+	}
+}
+
+void object::retrieveResource(int category)
+{
+	object resource;
+	
+	while( (resource = radar(category)) == null )
+	{
+		message("No TitaniumOre found.  Standing by...");
+		wait(10);    
+	}
+	
+	myGoto(resource.position);
+	
+	errmode(0);
+	grab();
+	errmode(1);
+}
+
+void object::processResource(int category)
+{
+	object building;
+	
+	while( (building = radar(category)) == null )
+	{
+		message("No Converter found.  Standing by...");
+		wait(10);    
+	}
+	
+	myGoto(triangulate2d(building));
+	myGoto(building.position);
+	
+	drop();
+	
+	move(-3);
+	wait(15);
+	move(1.5);
+	
+	grab();
+}
+
+void object::deliverResource(int category)
+{
+	object dest = radar(category);
+	
+	if(dest == null)
+	    goto(space());
+	else 
+	{
+		errmode(0);
+		if(goto(space(dest.position)) != 0)
+		    goto(space());
+		errmode(1);
+	}
+	    
+	drop();
+	
+	message("TitaniumCube delivered.",DisplayInfo);
+}
+
+void object::maint()
+{
+	message("Energy level low.  Searching for energy sources...");
+	
+	while(rechargePlanA() == false and rechargePlanB() == false)
+	{
+		message("Warning.  No energy sources found!");
+		wait(25);
+	}
+	
+	message("Recharge completed.  Resuming job duties...", DisplayInfo);
+}
+
+bool object::rechargePlanA()
+{
+	int cat[];
+	cat[0] = PowerStation; 
+	cat[1] = PowerCaptor;
+	
+	object pwrSource = radar(cat);  
+	
+	if(pwrSource != null)
+	{
+		myGoto(triangulate2d(pwrSource));
+		myGoto(pwrSource.position);
+		
+		message("Recharging at " + pwrSource.category + "...",DisplayInfo);
+		
+		while(energyCell.energyLevel < 1)
+		    wait(1);
+		
+		return true;
+	}
+	
+	return false;
+}
+
+bool object::rechargePlanB()
+{
+	object cell;
+	float min = 0;
+	
+	while( (cell = radar(PowerCell,0,360,min)) != null )
+	{
+		min = distance2d(position,cell.position) + 0.5;
+		
+		if(cell.energyLevel >= 0.5)
+		{
+			goto(cell.position);    
+			
+			message("Swapping with better PowerCell...",DisplayInfo);
+			
+			grab();   
+			drop(Behind);
+			
+			grab(EnergyCell);  
+			drop();
+			
+			grab(Behind);
+			drop(EnergyCell);
+			
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+void object::myGoto(point p)
+{
+	errmode(0);
+	
+	while(goto(p) != 0)
+	    wait(2);    
+	
+	errmode(1);
+}
+
+point object::triangulate2d(object o)
+{
+	point dest = o.position;
+	
+	dest.x += cos(o.orientation) * 10;
+	dest.y += sin(o.orientation) * 10;
+	
+	return dest;
+}
+
+// My new attack program.
+// Aiming and enemy seeking has been improved.
+// It works with all shooters (legged, winged, etc.)
+// against all enemy races (ant, wasp, etc.).
+// Because there is a bug with pitch value not being
+// recognized correctly while in 1st-person camera view,
+// I recommend switching camera view to 3rd-person for best
+// results.  Happy Hunting!
+
+public void object::attackAll()
+{
+	int cat[];                
+	 
+	cat[0] = AlienAnt;
+	cat[1] = AlienWorm;
+	cat[2] = AlienWasp;
+	cat[3] = AlienSpider;
+	cat[4] = AlienEgg;
+	
+	while(true)
+	{
+		object enemy = radar(cat);
+		
+		if(enemy != null)
+		    moveAndDestroy(enemy);
+	}
+}
+
+void object::moveAndDestroy(object target)
+{
+	float dir;
+	float dis;
+	float dif;
+	float ang;
+	
+	object infront = radar(target.category,0,45,0,45);
+	
+	if(infront != null)
+	    target = infront;
+	
+	dir = direction(target.position); 
+	dis = distance(position,target.position);
+	
+	if(dir > 45 and dis < 10)
+	    motor(-1,0);
+	else if(dir < -45 and dis < 10)
+	    motor(0,-1);
+	else 
+	    motor(1-dir/22.5,1+dir/22.5);
+	
+	dis = distance(position,target.position);   
+	dif = target.position.z-position.z;         
+	ang = asin(dif/dis);
+	
+	jet(1-ang/-20);
+	
+	dir = direction(target.position); 
+	dis = distance(position,target.position);   
+	dif = target.position.z-position.z;         
+	ang = asin(dif/dis)-pitch;   
+	
+	aim(ang);
+	
+	if(dis < 40 and -15 < dir and dir < 15 and -25 < ang and ang < 25)  
+	    fire(0.1);
+}
+
+public void object::rechargeAllTowers()
+{
+	float SELF_RECHARGE_LEVEL = 0.5;
+	    float TOWER_ENERGY_LEVEL = 0.3;
+	
+	if (load == null) {
+		message("You must start this program holding a cell", DisplayError);
+		return;
+	}
+	
+	if (load.energyLevel < 1) {
+		maint();
+	}
+	
+	while (true) {
+		object[] towers = radarall(DefenseTower);
+		
+		for (int i = 0; i < sizeof(towers); ++i)
+		{
+			object tower = towers[i];
+			
+			if (tower.energyCell.energyLevel < TOWER_ENERGY_LEVEL) {
+				                goto(tower.position);
+				turn(+90);
+				drop(); //drop spare left
+				turn(-90);
+				message("Replacing tower cell, ignore next message", DisplayWarning);
+				grab(); //tower cell
+				turn(-90);
+				drop(); //drop tower cell right
+				turn(+180);
+				grab(); //spare left
+				turn(-90);
+				drop(); //tower
+				turn(-90);
+				grab(); //tower cell
+			}else {wait(0.5);}
+			
+			if (load.energyLevel < 1 or energyCell.energyLevel < SELF_RECHARGE_LEVEL) {
+				            
+				    point startPos = position;
+				maint();
+				    myGoto(startPos);
+			}
+		} 
+	}
+}
+
+public void object::shielder(int allyType, int perimeter)
+{
+	//allyType: pe cine sa urmareasca: Me, PhazerShooter
+	//perimeter: cat de in spate sa stea, 5
+	
+	while(true)
+	{
+		follow(allyType, perimeter);
+	}
+}
+
+void object::follow(int category, int perimeter)
+{
+	object ally = radar(category);
+	float dis = distance(position, ally.position);
+	
+	shield(1,dis+3);
+	
+	if (dis>perimeter)
+	{
+		float dir = direction(ally.position);
+		motor(1-dir/22.5, 1+dir/22.5);
+	}
+	else 
+	{
+		motor(0,0);
+	}
+	    if (energyCell.energyLevel == 0.75)
+	        message("Bateria Shielder e la 75%", DisplayWarning);
+	    if (energyCell.energyLevel == 0.50)
+	        message("Bateria Shielder e la 50%", DisplayWarning);
+	    if (energyCell.energyLevel == 0.25)
+	        message("Bateria Shielder e la 25%", DisplayError);
+}
+
+//follower(Me,5)
+public void object::follower(int category, int perimeter)
+{
+	object ally = radar(category);
+	float dis = distance(position, ally.position);
+	
+	if (dis>perimeter)
+	{
+		float dif = ally.position.z -position.z;
+		float ang = asin(dif/dis);
+		
+		jet(1-(ang/-20));
+		
+		float dir = direction(ally.position);
+		motor(1-dir/22.5, 1+dir/22.5);
+	}
+	else 
+	{
+		motor(0,0);
+	}
+}
+
